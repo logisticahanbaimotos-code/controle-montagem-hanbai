@@ -158,88 +158,72 @@ function iniciarLeitura(){
 
 function enviarResultado(valor){
 
-  if(!valor)return;
+  const texto = String(valor || '').trim().toUpperCase();
 
-  ativo=false;
+  if (!texto) return;
+
+  ativo = false;
   pararCamera();
 
-  const texto=String(valor).trim().toUpperCase();
+  status.textContent = 'QR Code lido com sucesso.';
 
-  status.textContent='QR Code lido com sucesso.';
+  let destino = '';
 
-  // O retorno pela URL é o método principal.
-  // Isso força o próprio App Montadores a receber o chassi
-  // mesmo quando o celular/app não mantém window.opener.
-  try{
+  try {
+    const parametros = new URLSearchParams(window.location.search || '');
+    const retorno = parametros.get('retorno');
 
-    const parametros=new URLSearchParams(window.location.search || '');
-    const retorno=parametros.get('retorno');
-
-    if(retorno){
-
-      const urlRetorno=new URL(retorno);
-      urlRetorno.searchParams.set('qr',texto);
-      const destino=urlRetorno.toString();
-
-      // Se esta página foi aberta pelo App Montadores, manda
-      // o próprio aplicativo navegar para a URL de retorno.
-      // Assim o App Montadores abre novamente já com ?qr=CHASSI.
-      if(window.opener && !window.opener.closed){
-
-        try{
-          window.opener.postMessage(
-            {tipo:'CHASSI_QR',valor:texto},
-            '*'
-          );
-        }catch(e){
-          console.warn('postMessage não disponível:',e);
-        }
-
-        status.textContent='Chassi lido. Retornando ao aplicativo...';
-
-        try{
-          window.opener.location.href=destino;
-        }catch(e){
-          console.warn('Não foi possível redirecionar a janela original:',e);
-          window.location.href=destino;
-        }
-
-        setTimeout(function(){
-          try{ window.close(); }catch(e){}
-        },500);
-
-        return;
-      }
-
-      // Se não existe opener, o próprio leitor volta para o App.
-      status.textContent='Chassi lido. Retornando ao aplicativo...';
-
-      setTimeout(function(){
-        window.location.replace(destino);
-      },150);
-
-      return;
+    if (retorno) {
+      const urlRetorno = new URL(retorno);
+      urlRetorno.searchParams.set('qr', texto);
+      destino = urlRetorno.toString();
     }
-
-  }catch(e){
-    console.error('Erro ao retornar o chassi pela URL:',e);
+  } catch (e) {
+    console.error('Erro ao montar retorno:', e);
   }
 
-  // Também tenta postMessage quando não existe URL de retorno.
-  try{
-    if(window.opener && !window.opener.closed){
+  /*
+   * PRIMEIRO MÉTODO:
+   * entrega o chassi diretamente à janela que abriu o leitor.
+   */
+  try {
+    if (window.opener && !window.opener.closed) {
       window.opener.postMessage(
-        {tipo:'CHASSI_QR',valor:texto},
+        { tipo: 'CHASSI_QR', valor: texto },
         '*'
       );
     }
-  }catch(e){
-    console.warn('Não foi possível usar window.opener:',e);
+  } catch (e) {
+    console.warn('postMessage não disponível:', e);
   }
 
-  // Se não houver retorno configurado, permanece na tela.
-  btnFechar.textContent='VOLTAR';
-  status.textContent='QR lido: '+texto;
+  /*
+   * MÉTODO PRINCIPAL DE RETORNO:
+   * mesmo que postMessage não funcione, o próprio leitor
+   * volta para o App Montadores com ?qr=CHASSI.
+   *
+   * Isso é importante em celulares/PWA/WebView, onde
+   * window.opener pode não funcionar corretamente.
+   */
+  if (destino) {
+    status.textContent = 'Chassi lido. Voltando ao aplicativo...';
+
+    setTimeout(function(){
+      try {
+        window.location.replace(destino);
+      } catch (e) {
+        window.location.href = destino;
+      }
+    }, 400);
+
+    return;
+  }
+
+  /*
+   * Sem URL de retorno, apenas mostra o resultado.
+   */
+  btnFechar.textContent = 'VOLTAR';
+  status.textContent = 'QR lido: ' + texto;
 }
 
 function pararCamera(){
@@ -262,7 +246,18 @@ function pararCamera(){
 btnFechar.addEventListener('click',function(){
   ativo=false;
   pararCamera();
-  try{window.close();}catch(e){}
+
+  try {
+    const parametros = new URLSearchParams(window.location.search || '');
+    const retorno = parametros.get('retorno');
+
+    if (retorno) {
+      window.location.replace(retorno);
+      return;
+    }
+  } catch(e) {}
+
+  try { window.close(); } catch(e) {}
 });
 
 window.addEventListener('pagehide',function(){
