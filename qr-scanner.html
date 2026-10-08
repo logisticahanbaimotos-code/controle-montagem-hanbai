@@ -397,28 +397,31 @@ function enviarResultado(valor){
 
 
   /*
-   * Tenta obter a janela que abriu
-   * o leitor QR.
+   * ENVIO PARA O APP MONTADORES
+   *
+   * Quando o leitor está dentro do iframe,
+   * window.parent é o App Montadores.
    */
 
-  let app=null;
+  let destino=null;
 
 
   try{
 
     if(
-      window.opener &&
-      !window.opener.closed
+      window.parent &&
+      window.parent !== window
     ){
 
-      app=window.opener;
+      destino=
+        window.parent;
 
     }
 
   }catch(e){
 
     console.error(
-      'Erro ao acessar a janela do aplicativo:',
+      'Erro ao acessar window.parent:',
       e
     );
 
@@ -426,18 +429,14 @@ function enviarResultado(valor){
 
 
   /*
-   * ENVIA O CHASSI
+   * ENVIA PARA O APP
    */
 
-  if(app){
+  if(destino){
 
     try{
 
-      /*
-       * Primeiro envio
-       */
-
-      app.postMessage(
+      destino.postMessage(
         mensagem,
         '*'
       );
@@ -447,86 +446,21 @@ function enviarResultado(valor){
        * Segundo envio de segurança
        */
 
-      setTimeout(function(){
+      setTimeout(
+        function(){
 
-        try{
+          try{
 
-          if(
-            app &&
-            !app.closed
-          ){
-
-            app.postMessage(
+            destino.postMessage(
               mensagem,
               '*'
             );
 
-          }
+          }catch(e){}
 
-        }catch(e){
-
-          console.error(
-            'Erro no segundo envio:',
-            e
-          );
-
-        }
-
-      },300);
-
-
-      /*
-       * Terceiro envio de segurança
-       */
-
-      setTimeout(function(){
-
-        try{
-
-          if(
-            app &&
-            !app.closed
-          ){
-
-            app.postMessage(
-              mensagem,
-              '*'
-            );
-
-          }
-
-        }catch(e){
-
-          console.error(
-            'Erro no terceiro envio:',
-            e
-          );
-
-        }
-
-      },600);
-
-
-      /*
-       * Dá foco novamente ao App Montadores.
-       */
-
-      setTimeout(function(){
-
-        try{
-
-          if(
-            app &&
-            !app.closed
-          ){
-
-            app.focus();
-
-          }
-
-        }catch(e){}
-
-      },700);
+        },
+        250
+      );
 
 
       status.textContent=
@@ -534,19 +468,11 @@ function enviarResultado(valor){
 
 
       /*
-       * Fecha somente o leitor QR.
+       * NÃO fecha a janela.
+       *
+       * O App Montadores vai remover
+       * o iframe depois de receber o chassi.
        */
-
-      setTimeout(function(){
-
-        try{
-
-          window.close();
-
-        }catch(e){}
-
-      },900);
-
 
       return;
 
@@ -554,7 +480,7 @@ function enviarResultado(valor){
     }catch(e){
 
       console.error(
-        'Erro ao enviar o chassi ao aplicativo:',
+        'Erro ao enviar chassi:',
         e
       );
 
@@ -564,87 +490,60 @@ function enviarResultado(valor){
 
 
   /*
-   * Se chegou aqui, o QR foi lido,
-   * mas a janela do App Montadores
-   * não está disponível como opener.
+   * COMPATIBILIDADE:
+   *
+   * Caso o leitor seja aberto diretamente
+   * como uma janela, tenta window.opener.
+   */
+
+  try{
+
+    if(
+      window.opener &&
+      !window.opener.closed
+    ){
+
+      window.opener.postMessage(
+        mensagem,
+        '*'
+      );
+
+
+      status.textContent=
+        'Chassi enviado ao App Montadores.';
+
+
+      setTimeout(
+        function(){
+
+          try{
+            window.close();
+          }catch(e){}
+
+        },
+        500
+      );
+
+
+      return;
+
+    }
+
+  }catch(e){
+
+    console.error(
+      'Erro ao usar window.opener:',
+      e
+    );
+
+  }
+
+
+  /*
+   * NÃO ENCONTROU DESTINO
    */
 
   status.textContent=
     'QR lido, mas o aplicativo não foi localizado.';
 
-
-  btnFechar.textContent=
-    'FECHAR LEITOR';
-
 }
-
-
-function pararCamera(){
-
-  if(animationFrame){
-
-    cancelAnimationFrame(
-      animationFrame
-    );
-
-    animationFrame=null;
-
-  }
-
-
-  if(stream){
-
-    stream
-      .getTracks()
-      .forEach(function(track){
-
-        track.stop();
-
-      });
-
-    stream=null;
-
-  }
-
-
-  video.srcObject=null;
-
-}
-
-
-btnFechar.addEventListener(
-  'click',
-  function(){
-
-    ativo=false;
-
-    pararCamera();
-
-    try{
-
-      window.close();
-
-    }catch(e){}
-
-  }
-);
-
-
-window.addEventListener(
-  'pagehide',
-  function(){
-
-    ativo=false;
-
-    pararCamera();
-
-  }
-);
-
-
-iniciarCamera();
-
-</script>
-
-</body>
-</html>
