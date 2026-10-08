@@ -4,140 +4,36 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Leitor QR - Hanbai Motos</title>
-
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
-
 <style>
 *{box-sizing:border-box}
-
-html,body{
-  margin:0;
-  min-height:100%;
-  background:#111;
-  font-family:Arial,Helvetica,sans-serif;
-  color:#fff
-}
-
-body{
-  padding:16px
-}
-
-.caixa{
-  max-width:520px;
-  margin:0 auto
-}
-
-h1{
-  text-align:center;
-  font-size:22px;
-  margin:8px 0 6px
-}
-
-.sub{
-  text-align:center;
-  color:#bbb;
-  font-size:14px;
-  margin-bottom:18px
-}
-
-.video-area{
-  position:relative;
-  width:100%;
-  aspect-ratio:1/1;
-  background:#000;
-  border-radius:18px;
-  overflow:hidden;
-  border:2px solid #444
-}
-
-video{
-  width:100%;
-  height:100%;
-  object-fit:cover;
-  display:block
-}
-
-.mira{
-  position:absolute;
-  left:12%;
-  top:12%;
-  width:76%;
-  height:76%;
-  border:3px solid #fff;
-  border-radius:18px;
-  box-shadow:0 0 0 9999px rgba(0,0,0,.28);
-  pointer-events:none
-}
-
-.status{
-  text-align:center;
-  margin:16px 0;
-  min-height:22px;
-  font-size:15px
-}
-
-button{
-  width:100%;
-  min-height:52px;
-  border:0;
-  border-radius:12px;
-  background:#fff;
-  color:#111;
-  font-size:17px;
-  font-weight:700
-}
-
-.erro{
-  display:none;
-  background:#3b1518;
-  border:1px solid #8d3038;
-  color:#ffd7da;
-  border-radius:12px;
-  padding:14px;
-  margin-top:14px;
-  line-height:1.4;
-  font-size:14px
-}
-
-.nota{
-  text-align:center;
-  color:#999;
-  font-size:12px;
-  margin-top:15px
-}
+html,body{margin:0;min-height:100%;background:#111;font-family:Arial,Helvetica,sans-serif;color:#fff}
+body{padding:16px}
+.caixa{max-width:520px;margin:0 auto}
+h1{text-align:center;font-size:22px;margin:8px 0 6px}
+.sub{text-align:center;color:#bbb;font-size:14px;margin-bottom:18px}
+.video-area{position:relative;width:100%;aspect-ratio:1/1;background:#000;border-radius:18px;overflow:hidden;border:2px solid #444}
+video{width:100%;height:100%;object-fit:cover;display:block}
+.mira{position:absolute;left:12%;top:12%;width:76%;height:76%;border:3px solid #fff;border-radius:18px;box-shadow:0 0 0 9999px rgba(0,0,0,.28);pointer-events:none}
+.status{text-align:center;margin:16px 0;min-height:22px;font-size:15px}
+button{width:100%;min-height:52px;border:0;border-radius:12px;background:#fff;color:#111;font-size:17px;font-weight:700}
+.erro{display:none;background:#3b1518;border:1px solid #8d3038;color:#ffd7da;border-radius:12px;padding:14px;margin-top:14px;line-height:1.4;font-size:14px}
+.nota{text-align:center;color:#999;font-size:12px;margin-top:15px}
 </style>
 </head>
-
 <body>
-
 <div class="caixa">
-
   <h1>LEITOR QR CODE</h1>
-
-  <div class="sub">
-    Aponte a câmera para o QR Code do chassi
-  </div>
+  <div class="sub">Aponte a câmera para o QR Code do chassi</div>
 
   <div class="video-area">
-
-    <video
-      id="video"
-      autoplay
-      playsinline
-      muted>
-    </video>
-
+    <video id="video" autoplay playsinline muted></video>
     <div class="mira"></div>
-
   </div>
 
-  <div id="status" class="status">
-    Solicitando acesso à câmera...
-  </div>
+  <div id="status" class="status">Solicitando acesso à câmera...</div>
 
-  <button id="btnFechar" type="button">
-    FECHAR LEITOR
-  </button>
+  <button id="btnFechar" type="button">FECHAR LEITOR</button>
 
   <div id="erro" class="erro"></div>
 
@@ -145,11 +41,9 @@ button{
     A câmera é usada somente para leitura em tempo real.
     Nenhuma foto é salva no aparelho.
   </div>
-
 </div>
 
 <script>
-
 let stream=null;
 let ativo=true;
 let animationFrame=null;
@@ -161,389 +55,217 @@ const status=document.getElementById('status');
 const erro=document.getElementById('erro');
 const btnFechar=document.getElementById('btnFechar');
 
-
 function mostrarErro(texto){
-
   erro.textContent=texto;
   erro.style.display='block';
-
-  status.textContent=
-    'Não foi possível iniciar a câmera.';
+  status.textContent='Não foi possível iniciar a câmera.';
 }
-
 
 async function iniciarCamera(){
 
-  if(
-    !navigator.mediaDevices ||
-    !navigator.mediaDevices.getUserMedia
-  ){
-
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
     mostrarErro(
       'Este navegador não disponibilizou a câmera. Abra o leitor pelo endereço HTTPS do GitHub Pages.'
     );
-
     return;
   }
 
-
   try{
 
-    stream=
-      await navigator.mediaDevices.getUserMedia({
-
-        video:{
-          facingMode:{ideal:'environment'},
-          width:{ideal:1280},
-          height:{ideal:720}
-        },
-
-        audio:false
-
-      });
-
+    stream=await navigator.mediaDevices.getUserMedia({
+      video:{
+        facingMode:{ideal:'environment'},
+        width:{ideal:1280},
+        height:{ideal:720}
+      },
+      audio:false
+    });
 
     video.srcObject=stream;
-
     await video.play();
 
-
     erro.style.display='none';
-
-    status.textContent=
-      'Aponte a câmera para o QR Code...';
-
+    status.textContent='Aponte a câmera para o QR Code...';
 
     iniciarLeitura();
-
 
   }catch(e){
 
     console.error(e);
 
-
     if(e && e.name==='NotAllowedError'){
-
       mostrarErro(
         'A permissão da câmera foi negada. Autorize a câmera nas permissões do navegador e tente novamente.'
       );
-
     }else if(e && e.name==='NotFoundError'){
-
-      mostrarErro(
-        'Nenhuma câmera foi encontrada neste dispositivo.'
-      );
-
+      mostrarErro('Nenhuma câmera foi encontrada neste dispositivo.');
     }else{
-
       mostrarErro(
         'Não foi possível abrir a câmera. Verifique a permissão da câmera e tente novamente.'
       );
-
     }
-
   }
-
 }
-
 
 function iniciarLeitura(){
 
   if(!ativo)return;
 
-
-  if(
-    !video.videoWidth ||
-    !video.videoHeight
-  ){
-
-    animationFrame=
-      requestAnimationFrame(iniciarLeitura);
-
+  if(!video.videoWidth || !video.videoHeight){
+    animationFrame=requestAnimationFrame(iniciarLeitura);
     return;
   }
 
-
   if(!canvas){
-
-    canvas=
-      document.createElement('canvas');
-
-    contexto=
-      canvas.getContext(
-        '2d',
-        {willReadFrequently:true}
-      );
-
+    canvas=document.createElement('canvas');
+    contexto=canvas.getContext('2d',{willReadFrequently:true});
   }
-
 
   const originalW=video.videoWidth;
   const originalH=video.videoHeight;
-
   const limite=1000;
+  const escala=Math.min(1,limite/Math.max(originalW,originalH));
 
-  const escala=
-    Math.min(
-      1,
-      limite /
-      Math.max(originalW,originalH)
-    );
-
-
-  const largura=
-    Math.max(
-      1,
-      Math.round(originalW*escala)
-    );
-
-
-  const altura=
-    Math.max(
-      1,
-      Math.round(originalH*escala)
-    );
-
+  const largura=Math.max(1,Math.round(originalW*escala));
+  const altura=Math.max(1,Math.round(originalH*escala));
 
   canvas.width=largura;
   canvas.height=altura;
 
+  contexto.drawImage(video,0,0,largura,altura);
 
-  contexto.drawImage(
-    video,
-    0,
-    0,
-    largura,
-    altura
-  );
-
-
-  const imagem=
-    contexto.getImageData(
-      0,
-      0,
-      largura,
-      altura
-    );
-
+  const imagem=contexto.getImageData(0,0,largura,altura);
 
   let resultado=null;
 
-
   if(typeof jsQR==='function'){
-
-    resultado=
-      jsQR(
-        imagem.data,
-        imagem.width,
-        imagem.height,
-        {
-          inversionAttempts:'attemptBoth'
-        }
-      );
-
+    resultado=jsQR(
+      imagem.data,
+      imagem.width,
+      imagem.height,
+      {inversionAttempts:'attemptBoth'}
+    );
   }
 
-
   if(resultado && resultado.data){
-
     enviarResultado(resultado.data);
+    return;
+  }
+
+  status.textContent='Aponte a câmera para o QR Code...';
+  animationFrame=requestAnimationFrame(iniciarLeitura);
+}
+
+function enviarResultado(valor){
+
+  const texto = String(valor || '').trim().toUpperCase();
+
+  if (!texto) return;
+
+  ativo = false;
+  pararCamera();
+
+  status.textContent = 'QR Code lido com sucesso.';
+
+  let destino = '';
+
+  try {
+    const parametros = new URLSearchParams(window.location.search || '');
+    const retorno = parametros.get('retorno');
+
+    if (retorno) {
+      const urlRetorno = new URL(retorno);
+      urlRetorno.searchParams.set('qr', texto);
+      destino = urlRetorno.toString();
+    }
+  } catch (e) {
+    console.error('Erro ao montar retorno:', e);
+  }
+
+  /*
+   * PRIMEIRO MÉTODO:
+   * entrega o chassi diretamente à janela que abriu o leitor.
+   */
+  try {
+    if (window.opener && !window.opener.closed) {
+      window.opener.postMessage(
+        { tipo: 'CHASSI_QR', valor: texto },
+        '*'
+      );
+    }
+  } catch (e) {
+    console.warn('postMessage não disponível:', e);
+  }
+
+  /*
+   * MÉTODO PRINCIPAL DE RETORNO:
+   * mesmo que postMessage não funcione, o próprio leitor
+   * volta para o App Montadores com ?qr=CHASSI.
+   *
+   * Isso é importante em celulares/PWA/WebView, onde
+   * window.opener pode não funcionar corretamente.
+   */
+  if (destino) {
+    status.textContent = 'Chassi lido. Voltando ao aplicativo...';
+
+    setTimeout(function(){
+      try {
+        window.location.replace(destino);
+      } catch (e) {
+        window.location.href = destino;
+      }
+    }, 400);
 
     return;
   }
 
-
-  status.textContent=
-    'Aponte a câmera para o QR Code...';
-
-
-  animationFrame=
-    requestAnimationFrame(
-      iniciarLeitura
-    );
-
+  /*
+   * Sem URL de retorno, apenas mostra o resultado.
+   */
+  btnFechar.textContent = 'VOLTAR';
+  status.textContent = 'QR lido: ' + texto;
 }
 
+function pararCamera(){
 
-/*
- * ENVIA O CHASSI PARA O APP MONTADORES
- */
+  if(animationFrame){
+    cancelAnimationFrame(animationFrame);
+    animationFrame=null;
+  }
 
-function enviarResultado(valor){
+  if(stream){
+    stream.getTracks().forEach(function(track){
+      track.stop();
+    });
+    stream=null;
+  }
 
-  if(!valor) return;
+  video.srcObject=null;
+}
 
-
+btnFechar.addEventListener('click',function(){
   ativo=false;
-
-
   pararCamera();
 
+  try {
+    const parametros = new URLSearchParams(window.location.search || '');
+    const retorno = parametros.get('retorno');
 
-  const texto=
-    String(valor)
-      .trim()
-      .toUpperCase();
-
-
-  status.textContent=
-    'QR Code lido com sucesso.';
-
-
-  const mensagem={
-    tipo:'CHASSI_QR',
-    valor:texto
-  };
-
-
-  /*
-   * ENVIO PARA O APP MONTADORES
-   *
-   * Quando o leitor está dentro do iframe,
-   * window.parent é o App Montadores.
-   */
-
-  let destino=null;
-
-
-  try{
-
-    if(
-      window.parent &&
-      window.parent !== window
-    ){
-
-      destino=
-        window.parent;
-
-    }
-
-  }catch(e){
-
-    console.error(
-      'Erro ao acessar window.parent:',
-      e
-    );
-
-  }
-
-
-  /*
-   * ENVIA PARA O APP
-   */
-
-  if(destino){
-
-    try{
-
-      destino.postMessage(
-        mensagem,
-        '*'
-      );
-
-
-      /*
-       * Segundo envio de segurança
-       */
-
-      setTimeout(
-        function(){
-
-          try{
-
-            destino.postMessage(
-              mensagem,
-              '*'
-            );
-
-          }catch(e){}
-
-        },
-        250
-      );
-
-
-      status.textContent=
-        'Chassi enviado ao App Montadores.';
-
-
-      /*
-       * NÃO fecha a janela.
-       *
-       * O App Montadores vai remover
-       * o iframe depois de receber o chassi.
-       */
-
+    if (retorno) {
+      window.location.replace(retorno);
       return;
-
-
-    }catch(e){
-
-      console.error(
-        'Erro ao enviar chassi:',
-        e
-      );
-
     }
+  } catch(e) {}
 
-  }
+  try { window.close(); } catch(e) {}
+});
 
+window.addEventListener('pagehide',function(){
+  ativo=false;
+  pararCamera();
+});
 
-  /*
-   * COMPATIBILIDADE:
-   *
-   * Caso o leitor seja aberto diretamente
-   * como uma janela, tenta window.opener.
-   */
-
-  try{
-
-    if(
-      window.opener &&
-      !window.opener.closed
-    ){
-
-      window.opener.postMessage(
-        mensagem,
-        '*'
-      );
-
-
-      status.textContent=
-        'Chassi enviado ao App Montadores.';
-
-
-      setTimeout(
-        function(){
-
-          try{
-            window.close();
-          }catch(e){}
-
-        },
-        500
-      );
-
-
-      return;
-
-    }
-
-  }catch(e){
-
-    console.error(
-      'Erro ao usar window.opener:',
-      e
-    );
-
-  }
-
-
-  /*
-   * NÃO ENCONTROU DESTINO
-   */
-
-  status.textContent=
-    'QR lido, mas o aplicativo não foi localizado.';
-
-}
+iniciarCamera();
+</script>
+</body>
+</html>
