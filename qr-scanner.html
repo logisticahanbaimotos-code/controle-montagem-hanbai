@@ -365,12 +365,17 @@ function iniciarLeitura(){
 }
 
 
+/*
+ * ENVIA O CHASSI PARA O APP MONTADORES
+ */
+
 function enviarResultado(valor){
 
-  if(!valor)return;
+  if(!valor) return;
 
 
   ativo=false;
+
 
   pararCamera();
 
@@ -385,91 +390,153 @@ function enviarResultado(valor){
     'QR Code lido com sucesso.';
 
 
+  const mensagem={
+    tipo:'CHASSI_QR',
+    valor:texto
+  };
+
+
   /*
-   * ENVIO DO CHASSI PARA O APP MONTADORES
-   *
-   * O aplicativo que abriu esta janela recebe:
-   *
-   * {
-   *   tipo: 'CHASSI_QR',
-   *   valor: texto
-   * }
-   *
-   * NÃO fazemos redirecionamento.
-   * NÃO abrimos o Apps Script novamente.
-   * NÃO usamos ?qr=.
+   * Tenta obter a janela que abriu
+   * o leitor QR.
    */
 
+  let app=null;
 
-  if(
-    window.opener &&
-    !window.opener.closed
-  ){
+
+  try{
+
+    if(
+      window.opener &&
+      !window.opener.closed
+    ){
+
+      app=window.opener;
+
+    }
+
+  }catch(e){
+
+    console.error(
+      'Erro ao acessar a janela do aplicativo:',
+      e
+    );
+
+  }
+
+
+  /*
+   * ENVIA O CHASSI
+   */
+
+  if(app){
 
     try{
 
-      const mensagem={
-        tipo:'CHASSI_QR',
-        valor:texto
-      };
+      /*
+       * Primeiro envio
+       */
 
-
-      // Primeiro envio
-      window.opener.postMessage(
+      app.postMessage(
         mensagem,
         '*'
       );
 
 
-      // Segundo envio de segurança
+      /*
+       * Segundo envio de segurança
+       */
+
       setTimeout(function(){
 
         try{
 
           if(
-            window.opener &&
-            !window.opener.closed
+            app &&
+            !app.closed
           ){
 
-            window.opener.postMessage(
+            app.postMessage(
               mensagem,
               '*'
             );
 
           }
 
-        }catch(e){}
+        }catch(e){
 
-      },150);
+          console.error(
+            'Erro no segundo envio:',
+            e
+          );
 
-
-      // Terceiro envio de segurança
-      setTimeout(function(){
-
-        try{
-
-          if(
-            window.opener &&
-            !window.opener.closed
-          ){
-
-            window.opener.postMessage(
-              mensagem,
-              '*'
-            );
-
-          }
-
-        }catch(e){}
+        }
 
       },300);
 
 
+      /*
+       * Terceiro envio de segurança
+       */
+
+      setTimeout(function(){
+
+        try{
+
+          if(
+            app &&
+            !app.closed
+          ){
+
+            app.postMessage(
+              mensagem,
+              '*'
+            );
+
+          }
+
+        }catch(e){
+
+          console.error(
+            'Erro no terceiro envio:',
+            e
+          );
+
+        }
+
+      },600);
+
+
+      /*
+       * Dá foco novamente ao App Montadores.
+       */
+
+      setTimeout(function(){
+
+        try{
+
+          if(
+            app &&
+            !app.closed
+          ){
+
+            app.focus();
+
+          }
+
+        }catch(e){}
+
+      },700);
+
+
       status.textContent=
-        'Chassi enviado ao aplicativo.';
+        'Chassi enviado ao App Montadores.';
 
 
-      // Fecha somente o leitor QR
+      /*
+       * Fecha somente o leitor QR.
+       */
+
       setTimeout(function(){
 
         try{
@@ -478,7 +545,7 @@ function enviarResultado(valor){
 
         }catch(e){}
 
-      },450);
+      },900);
 
 
       return;
@@ -486,8 +553,8 @@ function enviarResultado(valor){
 
     }catch(e){
 
-      console.warn(
-        'Não foi possível enviar o chassi ao aplicativo:',
+      console.error(
+        'Erro ao enviar o chassi ao aplicativo:',
         e
       );
 
@@ -497,15 +564,9 @@ function enviarResultado(valor){
 
 
   /*
-   * IMPORTANTE:
-   *
-   * Não existe mais redirecionamento para:
-   *
-   * window.location.replace(...)
-   *
-   * Se não existir uma janela de origem,
-   * apenas informa que não foi possível
-   * devolver o resultado.
+   * Se chegou aqui, o QR foi lido,
+   * mas a janela do App Montadores
+   * não está disponível como opener.
    */
 
   status.textContent=
