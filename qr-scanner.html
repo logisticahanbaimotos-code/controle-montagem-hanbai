@@ -158,72 +158,112 @@ function iniciarLeitura(){
 
 function enviarResultado(valor){
 
-  const texto = String(valor || '').trim().toUpperCase();
+  if(!valor)return;
 
-  if (!texto) return;
-
-  ativo = false;
+  ativo=false;
   pararCamera();
 
-  status.textContent = 'QR Code lido com sucesso.';
+  const texto=String(valor).trim().toUpperCase();
 
-  let destino = '';
-
-  try {
-    const parametros = new URLSearchParams(window.location.search || '');
-    const retorno = parametros.get('retorno');
-
-    if (retorno) {
-      const urlRetorno = new URL(retorno);
-      urlRetorno.searchParams.set('qr', texto);
-      destino = urlRetorno.toString();
-    }
-  } catch (e) {
-    console.error('Erro ao montar retorno:', e);
-  }
+  status.textContent='QR Code lido com sucesso.';
 
   /*
-   * PRIMEIRO MÉTODO:
-   * entrega o chassi diretamente à janela que abriu o leitor.
+   * MÉTODO PRINCIPAL:
+   * envia o chassi diretamente para a janela que abriu
+   * o leitor e fecha o leitor.
+   *
+   * NÃO redirecionamos mais window.opener.location.
+   * Esse redirecionamento era o que provocava a tela branca
+   * no Google Apps Script.
    */
-  try {
-    if (window.opener && !window.opener.closed) {
-      window.opener.postMessage(
-        { tipo: 'CHASSI_QR', valor: texto },
-        '*'
+  if(window.opener && !window.opener.closed){
+
+    try{
+
+      const mensagem={
+        tipo:'CHASSI_QR',
+        valor:texto
+      };
+
+      /*
+       * Envia mais de uma vez em um intervalo curto para
+       * aumentar a robustez em celulares/WebView.
+       */
+      window.opener.postMessage(mensagem,'*');
+
+      setTimeout(function(){
+        try{
+          if(window.opener && !window.opener.closed){
+            window.opener.postMessage(mensagem,'*');
+          }
+        }catch(e){}
+      },120);
+
+      setTimeout(function(){
+        try{
+          if(window.opener && !window.opener.closed){
+            window.opener.postMessage(mensagem,'*');
+          }
+        }catch(e){}
+      },300);
+
+      status.textContent='Chassi enviado ao aplicativo.';
+
+      /*
+       * A janela foi criada pelo App através de window.open(),
+       * portanto pode ser fechada pelo próprio script.
+       */
+      setTimeout(function(){
+        try{
+          window.close();
+        }catch(e){}
+      },450);
+
+      return;
+
+    }catch(e){
+
+      console.warn(
+        'Não foi possível enviar o chassi ao aplicativo:',
+        e
       );
     }
-  } catch (e) {
-    console.warn('postMessage não disponível:', e);
   }
 
   /*
-   * MÉTODO PRINCIPAL DE RETORNO:
-   * mesmo que postMessage não funcione, o próprio leitor
-   * volta para o App Montadores com ?qr=CHASSI.
+   * PLANO DE CONTINGÊNCIA:
+   * se o leitor não tiver uma janela de origem, abre o
+   * endereço oficial do App Montadores já com o QR.
    *
-   * Isso é importante em celulares/PWA/WebView, onde
-   * window.opener pode não funcionar corretamente.
+   * Isso não é usado quando o leitor foi aberto pelo botão
+   * do aplicativo.
    */
-  if (destino) {
-    status.textContent = 'Chassi lido. Voltando ao aplicativo...';
+  try{
+
+    const URL_APP_MONTADORES =
+      'https://script.google.com/macros/s/AKfycbwipsDyZg63-KzSRCViGk7T8wZ1gvIJTmbh5BdPen4eqHyT2EcDiyqaAUElNQugW4yS/exec';
+
+    const destino =
+      URL_APP_MONTADORES +
+      '?qr=' +
+      encodeURIComponent(texto);
+
+    status.textContent='Abrindo o aplicativo...';
 
     setTimeout(function(){
-      try {
-        window.location.replace(destino);
-      } catch (e) {
-        window.location.href = destino;
-      }
-    }, 400);
+      window.location.replace(destino);
+    },250);
 
-    return;
+  }catch(e){
+
+    console.error(
+      'Erro no retorno de contingência:',
+      e
+    );
+
+    btnFechar.textContent='FECHAR LEITOR';
+    status.textContent='QR lido: '+texto;
   }
-
-  /*
-   * Sem URL de retorno, apenas mostra o resultado.
-   */
-  btnFechar.textContent = 'VOLTAR';
-  status.textContent = 'QR lido: ' + texto;
 }
 
 function pararCamera(){
@@ -246,18 +286,7 @@ function pararCamera(){
 btnFechar.addEventListener('click',function(){
   ativo=false;
   pararCamera();
-
-  try {
-    const parametros = new URLSearchParams(window.location.search || '');
-    const retorno = parametros.get('retorno');
-
-    if (retorno) {
-      window.location.replace(retorno);
-      return;
-    }
-  } catch(e) {}
-
-  try { window.close(); } catch(e) {}
+  try{window.close();}catch(e){}
 });
 
 window.addEventListener('pagehide',function(){
